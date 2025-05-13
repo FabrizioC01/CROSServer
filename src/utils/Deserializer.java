@@ -1,5 +1,6 @@
 package utils;
 
+import Errors.ClientSocketClose;
 import Errors.InvalidJsonObject;
 import Models.Credentials;
 import Models.MarketValues;
@@ -15,12 +16,13 @@ import enums.OperationToken;
  */
 public class Deserializer {
     private final OperationToken operation;
-    private Credentials credentials=null;
-    private User user=null;
-    private MarketValues marketValues=null;
+    private Credentials credentials=null; //used only for password update
+    private User user=null; //used for login and registration
+    private MarketValues marketValues=null; //used only for market operations
 
-    public Deserializer(String serialized_object) throws InvalidJsonObject {
+    public Deserializer(String serialized_object) throws InvalidJsonObject,ClientSocketClose {
         Gson gson = new Gson();
+        if(serialized_object==null) throw new ClientSocketClose();
         try {
             JsonObject jsonObject = JsonParser.parseString(serialized_object).getAsJsonObject();
             if (!jsonObject.has("operation")) throw new InvalidJsonObject();
@@ -47,5 +49,17 @@ public class Deserializer {
 
     public OperationToken getOperation() {
         return operation;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public MarketValues getMarketValues() {
+        return marketValues;
+    }
+
+    public Credentials getCredentials() {
+        return credentials;
     }
 }

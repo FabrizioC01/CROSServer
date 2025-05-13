@@ -3,7 +3,7 @@ package Models;
 public class User {
     private String username;
     private String password;
-    private transient int port;
+    private transient Integer port;
 
     public String getUsername() {
         return username;
@@ -13,6 +13,12 @@ public class User {
     }
     public int getPort(){
         return port;
+    }
+
+    public User(String username, String password) {
+        this.username = username;
+        this.password = password;
+        this.port = null;
     }
 
     @Override
