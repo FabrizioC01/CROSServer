@@ -46,12 +46,27 @@ public class PropertiesManager {
     }
 
     public int getPort(){
+        String port = properties.getProperty("port");
+        if(port==null){
+            System.out.println("Port not specified using default: 1234");
+            return 1234;
+        }
         return Integer.parseInt(properties.getProperty("port"));
     }
     public int getTimeout(){
+        String timeout = properties.getProperty("timeout");
+        if(timeout==null){
+            System.out.println("Timeout not specified, default timeout: 0");
+            return 0;
+        }
         return Integer.parseInt(properties.getProperty("timeout"));
     }
     public String getUsersFile(){
+        String usersFile = properties.getProperty("usersFile");
+        if(usersFile==null){
+            System.out.println("Users file not specified using default: 'users.json'");
+            return "users.json";
+        }
         return properties.getProperty("usersFile");
     }
 }
