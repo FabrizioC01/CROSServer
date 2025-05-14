@@ -19,10 +19,11 @@ import java.net.SocketTimeoutException;
 public class ConnectionService implements Runnable{
     private final Socket socket;
     private String msgPrefix;
+    private User user=null;
 
     public ConnectionService(Socket socket) {
         this.socket = socket;
-        this.msgPrefix = "["+socket.getInetAddress().getHostAddress()+"] ";
+        this.msgPrefix = "["+socket.getInetAddress().getHostAddress()+":"+socket.getPort()+"] ";
     }
     @Override
     public void run() {
@@ -52,12 +53,17 @@ public class ConnectionService implements Runnable{
                 }
                 default -> throw new InvalidJsonObject();
             }
+            System.out.println(msgPrefix+"client disconnected");
+            AuthManager.logout(user);
         }catch (ClientSocketClose cl){
-            System.out.println(msgPrefix+"connection lost");
+            System.out.println(msgPrefix+"client disconnected");
+            AuthManager.logout(user);
         }catch(InvalidJsonObject inv){
             System.out.println(msgPrefix+"invalid message received");
+            AuthManager.logout(user);
         }catch (SocketTimeoutException exc){
             System.out.println(msgPrefix+"timeout");
+            AuthManager.logout(user);
         } catch(IOException e) {
             System.out.println("error opening communication stream");
         }
@@ -65,7 +71,8 @@ public class ConnectionService implements Runnable{
 
 
     private void reservedArea(User user){
-        this.msgPrefix = "["+user.getUsername()+"] ";
+        this.msgPrefix = this.msgPrefix+ user.getUsername()+": ";
+        this.user = user;
         System.out.println(msgPrefix+"logged in");
 
     }

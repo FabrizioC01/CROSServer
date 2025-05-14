@@ -21,6 +21,7 @@ public class AuthManager {
     private static final ReentrantLock onlineLock = new ReentrantLock();
 
     public static void init(String fName){
+        fileName=fName;
         File f = new File(fName);
         try{
             if(f.createNewFile()){
@@ -32,7 +33,6 @@ public class AuthManager {
             System.out.println("Users file error...");
             throw new RuntimeException();
         }
-        fileName=fName;
     }
 
     public static ResponseCode register(User auth){
@@ -84,6 +84,8 @@ public class AuthManager {
             users = obj.getUsers();
 
             if(users.contains(auth)){
+                online.add(auth);
+                printOnlineUsers();
                 onlineLock.unlock();
                 return ResponseCode.LOG_OK;
             }else{
@@ -96,11 +98,23 @@ public class AuthManager {
         }
     }
 
+    private static void printOnlineUsers(){
+        onlineLock.lock();
+        System.out.println("[Online] "+online.size());
+        online.forEach((User u)->{
+            System.out.println("- "+u.getUsername());
+        });
+        onlineLock.unlock();
+    }
+
     public static ResponseCode logout(User auth){
         onlineLock.lock();
         boolean r = online.remove(auth);
         onlineLock.unlock();
-        if (r) return  ResponseCode.LOGOUT_OK;
+        if (r) {
+            printOnlineUsers();
+            return ResponseCode.LOGOUT_OK;
+        }
         return ResponseCode.LOGOUT_OFFLINE;
     }
 
