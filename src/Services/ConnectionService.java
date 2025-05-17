@@ -18,6 +18,8 @@ import java.net.SocketTimeoutException;
 
 public class ConnectionService implements Runnable{
     private final Socket socket;
+    private PrintWriter out=null;
+    private BufferedReader in=null;
     private String msgPrefix;
     private User user=null;
 
@@ -29,6 +31,8 @@ public class ConnectionService implements Runnable{
     public void run() {
         try(BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
+            this.out=writer;
+            this.in=reader;
             System.out.println(msgPrefix+"client connected");
             String msg = reader.readLine();
             Deserializer obj = new Deserializer(msg);
@@ -38,8 +42,8 @@ public class ConnectionService implements Runnable{
                 case login -> {
                     User u = obj.getUser();
                     ResponseCode resp = AuthManager.login(u);
-                    if(resp.equals(ResponseCode.LOG_OK)) reservedArea(u);
                     writer.println(new Serializer(resp));
+                    if(resp.equals(ResponseCode.LOG_OK)) reservedArea(u);
                 }
                 case register -> {
                     User u = obj.getUser();
@@ -51,7 +55,7 @@ public class ConnectionService implements Runnable{
                     ResponseCode resp = AuthManager.changePassword(c);
                     writer.println(new Serializer(resp));
                 }
-                default -> throw new InvalidJsonObject();
+                case null, default -> throw new InvalidJsonObject();
             }
             System.out.println(msgPrefix+"client disconnected");
             AuthManager.logout(user);
@@ -74,6 +78,29 @@ public class ConnectionService implements Runnable{
         this.msgPrefix = this.msgPrefix+ user.getUsername()+": ";
         this.user = user;
         System.out.println(msgPrefix+"logged in");
-
+        try{
+            while(true){
+                Deserializer req = new Deserializer(in.readLine());
+                System.out.println(msgPrefix+"ask for : "+req.getOperation());
+                switch(req.getOperation()){
+                    case login,register,updateCredentials -> {
+                        System.out.println(msgPrefix+"operation not accepted at this time");
+                        return;
+                    }
+                    case null, default -> {
+                        return;
+                    }
+                }
+            }
+        }catch (IOException ex){
+            System.out.println(msgPrefix+"error in I/O operation...");
+            AuthManager.logout(user);
+        }catch (ClientSocketClose cl){
+            System.out.println(msgPrefix+"client disconnected");
+            AuthManager.logout(user);
+        }catch(InvalidJsonObject inv){
+            System.out.println(msgPrefix+"invalid message received");
+            AuthManager.logout(user);
+        }
     }
 }
