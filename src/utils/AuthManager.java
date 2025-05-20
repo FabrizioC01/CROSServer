@@ -83,7 +83,15 @@ public class AuthManager {
             ArrayList<User> users;
             users = obj.getUsers();
 
-            if(users.contains(auth)){
+            boolean match=false;
+            for (User us : users) {
+                if (us.getPassword().equals(auth.getPassword()) && us.getUsername().equals(auth.getUsername())) {
+                    match = true;
+                    break;
+                }
+            }
+
+            if(match){
                 online.add(auth);
                 printOnlineUsers();
                 onlineLock.unlock();
@@ -129,7 +137,8 @@ public class AuthManager {
             }
         }
         fileLock.lock();
-        try(BufferedReader read= new BufferedReader(new FileReader(fileName))){
+        try(BufferedReader read= new BufferedReader(new FileReader(fileName));
+        PrintWriter print = new PrintWriter(new FileWriter(fileName))){
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             UserList obj= gson.fromJson(read, UserList.class);
             if(obj==null){
@@ -141,9 +150,11 @@ public class AuthManager {
             for(int i =0; i<obj.getUsers().size(); i++){
                 String username = obj.getUsers().get(i).getUsername();
                 String password = obj.getUsers().get(i).getPassword();
+
                 if(username.equals(auth.getUsername()) && password.equals(auth.getOldPassword())){
                     User u = new User(username,auth.getNewPassword());
                     obj.getUsers().set(i,u);
+                    obj.getUsers().forEach((User s )->{System.out.println("- "+u.getUsername());});
                     onlineLock.unlock();
                     fileLock.unlock();
                     return ResponseCode.UPD_OK;

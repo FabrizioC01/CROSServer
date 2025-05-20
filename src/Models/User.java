@@ -24,7 +24,7 @@ public class User {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof User user) {
-            return this.username.equals(user.getUsername()) && this.password.equals(user.password);
+            return this.username.equals(user.getUsername());
         }
         return false;
     }
