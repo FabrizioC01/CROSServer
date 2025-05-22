@@ -8,4 +8,12 @@ public class MarketValues {
     private Integer price;
     private Integer orderId;
     private String month;
+
+    public MarketType getType(){
+        return type;
+    }
+
+    public int getSize(){
+        return size;
+    }
 }
