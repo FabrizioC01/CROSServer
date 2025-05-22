@@ -6,6 +6,8 @@ import Models.User;
 import Models.UserList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
 import enums.ResponseCode;
 
 import java.io.*;
@@ -28,6 +30,7 @@ public class AuthManager {
                 System.out.println("Creating and using "+fileName+" as users file...");
             }else{
                 System.out.println("Using "+fileName+" as users file...");
+
             }
         }catch (IOException e){
             System.out.println("Users file error...");
@@ -36,33 +39,32 @@ public class AuthManager {
     }
 
     public static ResponseCode register(User auth){
-        if(auth.getPassword()==null || auth.getPassword().isEmpty()) return ResponseCode.REG_INV_PWD;
+        Gson gson=new GsonBuilder().setPrettyPrinting().create();
+        if(auth.getPassword().isEmpty() || auth.getPassword().isBlank()) return ResponseCode.REG_INV_PWD;
         fileLock.lock();
-        try {
-            BufferedReader read= new BufferedReader(new FileReader(fileName));
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            UserList obj;
-            obj = gson.fromJson(read, UserList.class);
-            if(obj==null) obj = new UserList(new ArrayList<>());
-            ArrayList<User> users;
-            users = obj.getUsers();
+        try{
+            BufferedReader fr=new BufferedReader(new FileReader(fileName));
+            UserList val = gson.fromJson(fr, UserList.class);
+            ArrayList<User> list;
 
-            read.close();
-            FileWriter writer = new FileWriter(fileName);
+            if(val == null) list = new ArrayList<>();
+            else list = val.getUsers();
 
-            if (users.contains(auth)) {
-                fileLock.unlock();
-                writer.close();
-                return  ResponseCode.REG_INV_USR;
-            }else{
-                users.add(auth);
-                gson.toJson(new UserList(users),writer);
-                fileLock.unlock();
-                writer.close();
-                return ResponseCode.REG_OK;
-            }
+            if(list.contains(auth)) return ResponseCode.REG_INV_USR;
+
+            fr.close();
+            list.add(auth);
+
+            FileWriter fw = new FileWriter(fileName);
+            gson.toJson(new UserList(list), UserList.class, fw);
+
+            fileLock.unlock();
+
+            fw.close();
+            return ResponseCode.REG_OK;
         }catch (IOException e){
             System.out.println("Users file error...");
+            fileLock.unlock();
             return ResponseCode.REG_GENERIC;
         }
     }
@@ -83,23 +85,17 @@ public class AuthManager {
             ArrayList<User> users;
             users = obj.getUsers();
 
-            boolean match=false;
             for (User us : users) {
-                if (us.getPassword().equals(auth.getPassword()) && us.getUsername().equals(auth.getUsername())) {
-                    match = true;
-                    break;
+                if (us.match(auth)) {
+                    online.add(auth);
+                    printOnlineUsers();
+                    onlineLock.unlock();
+                    return ResponseCode.LOG_OK;
                 }
             }
+            onlineLock.unlock();
+            return ResponseCode.LOG_WRONG;
 
-            if(match){
-                online.add(auth);
-                printOnlineUsers();
-                onlineLock.unlock();
-                return ResponseCode.LOG_OK;
-            }else{
-                onlineLock.unlock();
-                return ResponseCode.LOG_WRONG;
-            }
         }catch (IOException e){
             System.out.println("Users file error...");
             return ResponseCode.LOG_GENERIC;
@@ -127,45 +123,47 @@ public class AuthManager {
     }
 
     public static ResponseCode changePassword(Credentials auth){
+        Gson gson=new GsonBuilder().setPrettyPrinting().create();
         if(auth.getNewPassword().equals(auth.getOldPassword())) return ResponseCode.UPD_EQ;
-        if(auth.getNewPassword().isEmpty()) return ResponseCode.UPD_INV_PWD;
+        if(auth.getNewPassword().isBlank()|| auth.getNewPassword().isEmpty()) return ResponseCode.UPD_INV_PWD;
         onlineLock.lock();
         for(User u : online){
-            if(u.getUsername().equals(auth.getUsername())){
-                onlineLock.unlock();
-                return ResponseCode.UPD_ONLINE;
-            }
+            if(u.getUsername().equals(auth.getUsername())) return ResponseCode.UPD_ONLINE;
         }
         fileLock.lock();
-        try(BufferedReader read= new BufferedReader(new FileReader(fileName));
-        PrintWriter print = new PrintWriter(new FileWriter(fileName))){
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            UserList obj= gson.fromJson(read, UserList.class);
-            if(obj==null){
-                onlineLock.unlock();
-                fileLock.unlock();
-                return ResponseCode.UPD_WRONG;
-            }
+        try{
+            FileReader fr = new FileReader(fileName);
+            UserList obj = gson.fromJson(fr, UserList.class);
+            fr.close();
+            if(obj==null) obj = new UserList(new ArrayList<>());
+            ArrayList<User> list = obj.getUsers();
 
-            for(int i =0; i<obj.getUsers().size(); i++){
-                String username = obj.getUsers().get(i).getUsername();
-                String password = obj.getUsers().get(i).getPassword();
-
-                if(username.equals(auth.getUsername()) && password.equals(auth.getOldPassword())){
-                    User u = new User(username,auth.getNewPassword());
-                    obj.getUsers().set(i,u);
-                    obj.getUsers().forEach((User s )->{System.out.println("- "+u.getUsername());});
-                    onlineLock.unlock();
-                    fileLock.unlock();
+            for (User u : list) {
+                if (u.getUsername().equals(auth.getUsername()) && u.getPassword().equals(auth.getOldPassword())) {
+                    u.setPassword(auth.getNewPassword());
+                    try {
+                        FileWriter fw = new FileWriter(fileName);
+                        gson.toJson(new UserList(list), fw);
+                        fw.close();
+                        fileLock.unlock();
+                        onlineLock.unlock();
+                    } catch (IOException e) {
+                        System.out.println("Users file error...");
+                        fileLock.unlock();
+                        onlineLock.unlock();
+                        return ResponseCode.UPD_GENERIC;
+                    }
                     return ResponseCode.UPD_OK;
                 }
             }
+            onlineLock.unlock();
+            fileLock.unlock();
             return ResponseCode.UPD_WRONG;
-
         }catch (IOException e){
             System.out.println("Users file error...");
+            onlineLock.unlock();
+            fileLock.unlock();
             return ResponseCode.UPD_GENERIC;
         }
-
     }
 }

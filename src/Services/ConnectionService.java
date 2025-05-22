@@ -87,6 +87,11 @@ public class ConnectionService implements Runnable{
                         System.out.println(msgPrefix+"operation not accepted at this time");
                         return;
                     }
+                    case logout -> {
+                        ResponseCode rc = AuthManager.logout(user);
+                        Serializer ser = new Serializer(rc);
+                        out.println(ser);
+                    }
                     case null, default -> {
                         return;
                     }

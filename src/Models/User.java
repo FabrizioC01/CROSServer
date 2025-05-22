@@ -21,11 +21,19 @@ public class User {
         this.port = null;
     }
 
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof User user) {
-            return this.username.equals(user.getUsername());
+        if (obj instanceof User) {
+            return this.username.equals(((User) obj).getUsername());
         }
         return false;
+    }
+
+    public boolean match(User user) {
+        return this.username.equals(user.getUsername()) && this.password.equals(user.getPassword());
     }
 }
