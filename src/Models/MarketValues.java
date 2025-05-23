@@ -12,6 +12,15 @@ public class MarketValues {
     public MarketType getType(){
         return type;
     }
+    public void decrease(int val){
+        size -= val;
+    }
+    public int getPrice(){
+        return price;
+    }
+    public void setsize(int val){
+        size = val;
+    }
 
     public int getSize(){
         return size;
