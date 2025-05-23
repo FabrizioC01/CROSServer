@@ -12,8 +12,9 @@ public class Order {
     private Integer price;
     private Timestamp timestamp;
     private transient Integer remaining;
+    private transient String user;
 
-    public Order(int orderId, MarketType type, String orderType, Integer size, Integer price, Timestamp timestamp) {
+    public Order(int orderId, MarketType type, String orderType, Integer size, Integer price, Timestamp timestamp,String user){
         this.orderId = orderId;
         this.type = type;
         this.orderType = orderType;
@@ -21,6 +22,7 @@ public class Order {
         this.price = price;
         this.timestamp = timestamp;
         this.remaining=size;
+        this.user=user;
     }
 
     public int getPrice(){
@@ -41,7 +43,11 @@ public class Order {
         this.size -= size;
     }
 
+    public int getOrderId() {
+        return orderId;
+    }
+
     public static Order nullOrder(){
-        return new Order(-1,null,"",null,null,null);
+        return new Order(-1,null,"",null,null,null,"");
     }
 }

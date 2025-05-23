@@ -7,6 +7,7 @@ import Models.User;
 import enums.ResponseCode;
 import utils.AuthManager;
 import utils.Deserializer;
+import utils.MarketManager;
 import utils.Serializer;
 
 import java.io.BufferedReader;
@@ -86,6 +87,12 @@ public class ConnectionService implements Runnable{
                     case login,register,updateCredentials -> {
                         System.out.println(msgPrefix+"operation not accepted at this time");
                         return;
+                    }
+                    case insertLimitOrder -> {
+                        int id = MarketManager.insertLimitOrder(req.getMarketValues(), user.getUsername());
+                        Serializer ser = new Serializer(id);
+                        System.out.println(ser);
+                        out.println(ser);
                     }
                     case logout -> {
                         ResponseCode rc = AuthManager.logout(user);

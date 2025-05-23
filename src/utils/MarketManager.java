@@ -1,82 +1,104 @@
 package utils;
 
+
 import Models.MarketValues;
 import Models.Order;
 import enums.MarketType;
 
 import java.sql.Timestamp;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-
 public class MarketManager {
-    private static final ConcurrentSkipListMap<Integer, ConcurrentLinkedQueue<Order>> bidBook = new ConcurrentSkipListMap<>();
-    private static final ConcurrentSkipListMap<Integer, ConcurrentLinkedQueue<Order>> askBook = new ConcurrentSkipListMap<>(Comparator.reverseOrder());
+    private static final TreeMap<Integer, Queue<Order>> bidBook = new TreeMap<>(Comparator.reverseOrder());
+    private static final ReentrantLock bidLock = new ReentrantLock();
+
+    private static final TreeMap<Integer, Queue<Order>> askBook = new TreeMap<>();
+    private static final ReentrantLock askLock = new ReentrantLock();
 
     private static final AtomicInteger idCounter = new AtomicInteger(0);
 
-    private static final ReentrantLock orderLock = new ReentrantLock();
+    private static final ReentrantLock historyLock=new ReentrantLock();
+    private static final ArrayList<Order> history = new ArrayList<>();
 
-    private static final ConcurrentLinkedQueue<Order> storico = new ConcurrentLinkedQueue<>();
+    public static int insertLimitOrder(MarketValues request,String user){
+        Order order = new Order(idCounter.incrementAndGet(),request.getType(),"limit",request.getSize(),request.getPrice(),new Timestamp(System.currentTimeMillis()),user);
+        if(request.getType().equals(MarketType.ask)){
+            bidLock.lock();
+            Iterator<Map.Entry<Integer,Queue<Order>>> it = bidBook.entrySet().iterator();
+            while(it.hasNext()){
+                Map.Entry<Integer,Queue<Order>> entry = it.next();
+                if(request.getPrice()<entry.getKey()) break;
+                if (bookConsumer(order, it, entry, bidLock)) return order.getOrderId();
+            }
+            bidLock.unlock();
+            askLock.lock();
+            Queue<Order> list =askBook.get(order.getPrice());
+            if(list==null) list = new LinkedList<>();
+            list.add(order);
+            askLock.unlock();
+        }else {
+            askLock.lock();
+            Iterator<Map.Entry<Integer,Queue<Order>>> it = askBook.entrySet().iterator();
+            while(it.hasNext()){
+                Map.Entry<Integer,Queue<Order>> entry = it.next();
+                if(request.getPrice()>entry.getKey()) break;
+                if (bookConsumer(order, it, entry, askLock)) return order.getOrderId();
+            }
+            askLock.unlock();
+            bidLock.lock();
+            Queue<Order> list =bidBook.get(order.getPrice());
+            if(list == null) list = new LinkedList<>();
+            list.add(order);
+            bidLock.unlock();
 
-    private static final ConcurrentSkipListMap<Integer, ConcurrentLinkedQueue<Order>> stopAskBook = new ConcurrentSkipListMap<>();
-    private static final ConcurrentSkipListMap<Integer, ConcurrentLinkedQueue<Order>> stopBidBook = new ConcurrentSkipListMap<>(Comparator.reverseOrder());
-
-    public static int insertMarketOrder(MarketValues mv){
-        int mid=0;
-        int n=0;
-        ConcurrentSkipListMap<Integer, ConcurrentLinkedQueue<Order>> map = (mv.getType().equals(MarketType.ask))? bidBook:askBook;
-        orderLock.lock();
-        if(getBookSize(map)<mv.getSize()){
-            orderLock.unlock();
-            return -1;
         }
-        int tot = mv.getSize();
-        Iterator<Map.Entry<Integer, ConcurrentLinkedQueue<Order>>> it = map.entrySet().iterator();
-        while (it.hasNext()){
-            Map.Entry<Integer, ConcurrentLinkedQueue<Order>> entry = it.next();
-            ConcurrentLinkedQueue<Order> orders = entry.getValue();
-            Iterator<Order> orderIterator = orders.iterator();
-            while (orderIterator.hasNext()){
-                Order order = orderIterator.next();
-                n++;
-                mid+=order.getPrice();
-                if(order.getRemaining()<=mv.getSize()){
-                    mv.decrease(order.getRemaining());
-                    orderIterator.remove();
-                    if(orders.isEmpty()) it.remove();
-                }else{
-                    order.consume(mv.getSize());
-                    mv.setsize(0);
-                    if(orders.isEmpty()) it.remove();
-                    break;
-                }
+        printBooks();
+        return order.getOrderId();
+    }
+
+    private static boolean bookConsumer(Order order, Iterator<Map.Entry<Integer, Queue<Order>>> it, Map.Entry<Integer, Queue<Order>> entry, ReentrantLock askLock) {
+        Iterator<Order> queue = entry.getValue().iterator();
+        while(queue.hasNext()){
+            Order val = queue.next();
+            if(val.getRemaining()<=order.getRemaining()){ //ORDINI GRANDI DA SVUOTARE
+                order.consume(val.getRemaining());
+                historyLock.lock();
+                history.add(order);
+                historyLock.unlock();
+                queue.remove();
+            }else{ //ORDINI QUASI O COMPLETAMENTE VUOTI
+                val.consume(order.getRemaining());
+                order.setRemaining(0);
+                historyLock.lock();
+                history.add(order);
+                historyLock.unlock();
+                askLock.unlock();
+                return true;
             }
         }
-        orderLock.unlock();
-        int id = idCounter.incrementAndGet();
-        storico.add(new Order(id,mv.getType(),"market",tot,mid/n,new Timestamp(System.currentTimeMillis())));
-        return id;
+        if(entry.getValue().isEmpty()) it.remove();
+        return false;
     }
 
-    public static int insertLimitOrder(MarketValues mv){
-        ConcurrentSkipListMap<Integer, ConcurrentLinkedQueue<Order>> map = (mv.getType().equals(MarketType.ask))? bidBook:askBook;
-        if(map.firstKey()<mv.getSize()){}
-    }
-
-    private static int getBookSize(ConcurrentSkipListMap<Integer, ConcurrentLinkedQueue<Order>> book){
-        int sum=0;
-        for(ConcurrentLinkedQueue<Order> q : book.values()){
+    private static void printBooks(){
+        bidLock.lock();
+        System.out.println("BIDBOOK :");
+        for(Queue<Order> q : bidBook.values()){
             for(Order o : q){
-                sum+=o.getRemaining();
+                System.out.println("["+o.getOrderId()+"] "+o.getPrice()+" x "+o.getRemaining());
             }
         }
-        return sum;
+        bidLock.unlock();
+        askLock.lock();
+        System.out.println("Askbook :");
+        for(Queue<Order> q : askBook.values()){
+            for(Order o : q){
+                System.out.println("["+o.getOrderId()+"] "+o.getPrice()+" x "+o.getRemaining());
+            }
+        }
+        askLock.unlock();
     }
 
 }
