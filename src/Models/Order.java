@@ -28,11 +28,18 @@ public class Order {
     public int getPrice(){
         return price;
     }
+    public void setPrice(int price){
+        this.price = price;
+    }
     public int getFullSize(){
         return size;
     }
     public int getRemaining(){
         return remaining;
+    }
+
+    public MarketType getType(){
+        return type;
     }
 
     public void setRemaining(int v){
@@ -47,7 +54,4 @@ public class Order {
         return orderId;
     }
 
-    public static Order nullOrder(){
-        return new Order(-1,null,"",null,null,null,"");
-    }
 }
