@@ -91,8 +91,8 @@ public class ConnectionService implements Runnable{
                     case insertLimitOrder -> {
                         int id = MarketManager.insertLimitOrder(req.getMarketValues(), user.getUsername());
                         Serializer ser = new Serializer(id);
-                        System.out.println(ser);
                         out.println(ser);
+                        MarketManager.printBooks();
                     }
                     case logout -> {
                         ResponseCode rc = AuthManager.logout(user);

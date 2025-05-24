@@ -40,7 +40,7 @@ public class Order {
     }
 
     public void consume(int amount){
-        this.size -= size;
+        this.remaining -= amount;
     }
 
     public int getOrderId() {
