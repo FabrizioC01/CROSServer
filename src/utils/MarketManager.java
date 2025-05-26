@@ -2,14 +2,14 @@ package utils;
 
 
 import Models.MarketValues;
+import Models.Notification;
 import Models.Order;
-import Models.User;
+import Services.NotificationService;
 import enums.MarketType;
 
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class MarketManager {
     private static final TreeMap<Integer, Queue<Order>> bidBook = new TreeMap<>(Collections.reverseOrder());
@@ -28,28 +28,32 @@ public class MarketManager {
         if(quantityCheck(book,marketValues.getSize())){
             Iterator<Map.Entry<Integer, Queue<Order>>> iterator = book.entrySet().iterator();
             while(iterator.hasNext()){
-                Map.Entry<Integer, Queue<Order>> entry = iterator.next(); //key value pair
+                Map.Entry<Integer, Queue<Order>> entry = iterator.next(); // key-value
                 Iterator<Order> orderIterator = entry.getValue().iterator();
                 while(orderIterator.hasNext()){
                     Order order = orderIterator.next();
-                    if(marketValues.getSize()==0) break;
-                    if(marketValues.getSize()>=order.getRemaining()){
+                    if(order.getRemaining()<=marketValues.getSize()){
                         marketValues.decrease(order.getRemaining());
-                        order.setRemaining(0);
                         history.add(order);
-                        sum+=order.getPrice();
+                        NotificationService.notify(order);
+                        order.setRemaining(0);
                         n++;
+                        sum+=order.getPrice();
                         orderIterator.remove();
                     }else{
-                        order.consume(marketValues.getSize());
-                        marketValues.setsize(0);
-                        history.add(new);
+                        if(marketValues.getSize()!=0){
+                            n++;
+                            sum += order.getPrice();
+                            order.consume(marketValues.getSize());
+                            marketValues.setsize(0);
+                        }
+                        int id = idCounter.incrementAndGet();
+                        Order ord = new Order(id,marketValues.getType(),"market",size,sum/n,new Timestamp(System.currentTimeMillis()),user);
+                        history.add(ord);
+                        return id;
                     }
                 }
                 if(entry.getValue().isEmpty()) iterator.remove();
-                if(marketValues.getSize()==0){
-                    history.add(new Order(idCounter.incrementAndGet(),marketValues.getType(),"market",size,sum/n,new Timestamp(System.currentTimeMillis()),user));
-                }
             }
         }return -1;
     }
@@ -106,12 +110,14 @@ public class MarketManager {
                 val.setRemaining(0);
                 val.setPrice(order.getPrice());
                 history.add(val);
+                NotificationService.notify(val);
                 queue.remove();
             }else{ //ORDINI QUASI O COMPLETAMENTE VUOTI
                 val.consume(order.getRemaining());
                 order.setRemaining(0);
                 order.setPrice(val.getPrice());
                 history.add(order);
+                NotificationService.notify(order);
                 return true;
             }
         }

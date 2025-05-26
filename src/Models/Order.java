@@ -11,8 +11,8 @@ public class Order {
     private Integer size;
     private Integer price;
     private Timestamp timestamp;
-    private transient Integer remaining;
-    private transient String user;
+    private Integer remaining;
+    private String user;
 
     public Order(int orderId, MarketType type, String orderType, Integer size, Integer price, Timestamp timestamp,String user){
         this.orderId = orderId;
@@ -40,6 +40,10 @@ public class Order {
 
     public MarketType getType(){
         return type;
+    }
+
+    public String getUser(){
+        return user;
     }
 
     public void setRemaining(int v){

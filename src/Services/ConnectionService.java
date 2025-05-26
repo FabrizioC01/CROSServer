@@ -44,7 +44,10 @@ public class ConnectionService implements Runnable{
                     User u = obj.getUser();
                     ResponseCode resp = AuthManager.login(u);
                     writer.println(new Serializer(resp));
-                    if(resp.equals(ResponseCode.LOG_OK)) reservedArea(u);
+                    if(resp.equals(ResponseCode.LOG_OK)){
+                        NotificationService.register(u.getUsername(),socket.getInetAddress().getHostAddress(),u.getPort());
+                        reservedArea(u);
+                    }
                 }
                 case register -> {
                     User u = obj.getUser();
@@ -87,6 +90,12 @@ public class ConnectionService implements Runnable{
                     case login,register,updateCredentials -> {
                         System.out.println(msgPrefix+"operation not accepted at this time");
                         return;
+                    }
+                    case insertMarketOrder -> {
+                        int id = MarketManager.insertMarketOrder(req.getMarketValues(),user.getUsername());
+                        Serializer ser = new Serializer(id);
+                        out.println(ser);
+                        MarketManager.printBooks();
                     }
                     case insertLimitOrder -> {
                         int id = MarketManager.insertLimitOrder(req.getMarketValues(), user.getUsername());

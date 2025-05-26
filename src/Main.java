@@ -1,4 +1,5 @@
 import Services.ConnectionService;
+import Services.NotificationService;
 import utils.AuthManager;
 import utils.PropertiesManager;
 
@@ -14,10 +15,12 @@ public class Main {
         PropertiesManager pm = new PropertiesManager();
         AuthManager.init(pm.getUsersFile());
 
+
         try(ServerSocket socket = new ServerSocket(pm.getPort());
             ExecutorService exec = Executors.newCachedThreadPool()) {
             System.out.println("[Server] Listening on port " + socket.getLocalPort());
             socket.setSoTimeout(pm.getTimeout());
+            exec.execute(new NotificationService());
             while (true) {
                 Socket s = socket.accept();
                 exec.execute(new ConnectionService(s));

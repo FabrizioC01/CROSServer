@@ -1,5 +1,7 @@
 package utils;
 
+import Models.Notification;
+import Models.Order;
 import com.google.gson.Gson;
 import enums.ResponseCode;
 
@@ -28,6 +30,12 @@ public class Serializer implements Serializable {
         this.response = null;
         this.errorMessage = null;
         this.orderId = orderId;
+    }
+
+    public static String serializeClosedTrade(Order o){
+        Gson gson = new Gson();
+        Notification n = new Notification(o);
+        return gson.toJson(n);
     }
 
     @Override
