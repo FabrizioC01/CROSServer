@@ -3,6 +3,7 @@ package Services;
 import Errors.ClientSocketClose;
 import Errors.InvalidJsonObject;
 import Models.Credentials;
+import Models.MarketValues;
 import Models.User;
 import enums.ResponseCode;
 import utils.AuthManager;
@@ -15,7 +16,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConnectionService implements Runnable{
     private final Socket socket;
@@ -23,6 +26,7 @@ public class ConnectionService implements Runnable{
     private BufferedReader in=null;
     private String msgPrefix;
     private User user=null;
+    private static final AtomicBoolean canRun = new AtomicBoolean(true);
 
     public ConnectionService(Socket socket) {
         this.socket = socket;
@@ -63,7 +67,10 @@ public class ConnectionService implements Runnable{
             }
             System.out.println(msgPrefix+"client disconnected");
             AuthManager.logout(user);
-        }catch (ClientSocketClose cl){
+        }catch (SocketException ex){
+            if (!canRun.get()) System.out.println(msgPrefix+" client kicked for shutdown");
+            else System.out.println(msgPrefix+"Socket error");
+        } catch (ClientSocketClose cl){
             System.out.println(msgPrefix+"client disconnected");
             AuthManager.logout(user);
         }catch(InvalidJsonObject inv){
@@ -83,25 +90,28 @@ public class ConnectionService implements Runnable{
         this.user = user;
         System.out.println(msgPrefix+"logged in");
         try{
-            while(true){
+            while(canRun.get()){
                 Deserializer req = new Deserializer(in.readLine());
                 System.out.println(msgPrefix+"ask for : "+req.getOperation());
                 switch(req.getOperation()){
                     case login,register,updateCredentials -> {
-                        System.out.println(msgPrefix+"operation not accepted at this time");
+                        System.out.println(msgPrefix+"operation not accepted in this area");
+                        AuthManager.logout(user);
                         return;
                     }
                     case insertMarketOrder -> {
                         int id = MarketManager.insertMarketOrder(req.getMarketValues(),user.getUsername());
                         Serializer ser = new Serializer(id);
                         out.println(ser);
-                        MarketManager.printBooks();
                     }
                     case insertLimitOrder -> {
                         int id = MarketManager.insertLimitOrder(req.getMarketValues(), user.getUsername());
                         Serializer ser = new Serializer(id);
                         out.println(ser);
-                        MarketManager.printBooks();
+                    }
+                    case getPriceHistory -> {
+                        MarketValues mv =req.getMarketValues();
+
                     }
                     case logout -> {
                         ResponseCode rc = AuthManager.logout(user);
@@ -109,19 +119,22 @@ public class ConnectionService implements Runnable{
                         out.println(ser);
                     }
                     case null, default -> {
+                        AuthManager.logout(user);
                         return;
                     }
                 }
             }
         }catch (IOException ex){
             System.out.println(msgPrefix+"error in I/O operation...");
-            AuthManager.logout(user);
         }catch (ClientSocketClose cl){
             System.out.println(msgPrefix+"client disconnected");
-            AuthManager.logout(user);
         }catch(InvalidJsonObject inv){
             System.out.println(msgPrefix+"invalid message received");
+        }finally {
             AuthManager.logout(user);
         }
+    }
+    public static void disconnectAll(){
+        canRun.set(false);
     }
 }

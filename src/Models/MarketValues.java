@@ -25,4 +25,7 @@ public class MarketValues {
     public int getSize(){
         return size;
     }
+    public String getMonth(String month){
+        return month;
+    }
 }

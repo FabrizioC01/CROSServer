@@ -92,7 +92,7 @@ public class AuthManager {
         }
     }
 
-    private static synchronized void printOnlineUsers(){
+    public static synchronized void printOnlineUsers(){
         System.out.println("[Online] "+online.size());
         online.forEach((User u)->{
             System.out.println("- "+u.getUsername());

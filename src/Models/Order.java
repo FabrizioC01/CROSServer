@@ -4,13 +4,14 @@ import enums.MarketType;
 
 import java.sql.Timestamp;
 
+
 public class Order {
     private int orderId;
     private MarketType type;
     private String orderType; //market,stop or limit
     private Integer size;
     private Integer price;
-    private Timestamp timestamp;
+    private long timestamp;
     private Integer remaining;
     private String user;
 
@@ -20,7 +21,7 @@ public class Order {
         this.orderType = orderType;
         this.size = size;
         this.price = price;
-        this.timestamp = timestamp;
+        this.timestamp = timestamp.getTime();
         this.remaining=size;
         this.user=user;
     }

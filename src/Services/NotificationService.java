@@ -12,10 +12,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class NotificationService implements Runnable{
     private static final ConcurrentHashMap<String,Address> usersIPs = new ConcurrentHashMap<>();
     private static final BlockingQueue<Order> notifications = new LinkedBlockingQueue<>();
+    private static boolean running = true;
 
     @Override
     public void run() {
-        while(true){
+        while(running){
             try {
                 DatagramSocket ds = new DatagramSocket();
                 Order o = notifications.take();
@@ -37,6 +38,7 @@ public class NotificationService implements Runnable{
             }
 
         }
+        System.out.println("[NotificationService] Notification service stopped");
     }
 
     public static void notify(Order order){
@@ -54,6 +56,11 @@ public class NotificationService implements Runnable{
     public static void unRegister(String user){
         usersIPs.remove(user);
     }
+
+    public static void stop(){
+        running = false;
+    }
+
 }
 
 class Address{

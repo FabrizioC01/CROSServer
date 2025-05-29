@@ -34,6 +34,8 @@ public class PropertiesManager {
         properties.setProperty("port", "1234");
         properties.setProperty("timeout", "0");
         properties.setProperty("usersFile","users.json");
+        properties.setProperty("bookFile","book.json");
+        properties.setProperty("historyFile","storicoOrdini.json");
     }
 
     private void saveProperties() {
@@ -44,6 +46,7 @@ public class PropertiesManager {
             System.exit(1);
         }
     }
+
 
     public int getPort(){
         String port = properties.getProperty("port");
@@ -68,5 +71,15 @@ public class PropertiesManager {
             return "users.json";
         }
         return properties.getProperty("usersFile");
+    }
+    public String getHistoryFile(){
+        String historyFile = properties.getProperty("historyFile");
+        if(historyFile==null) return null;
+        return properties.getProperty("historyFile");
+    }
+    public String getBookFile(){
+        String bookFile = properties.getProperty("bookFile");
+        if(bookFile==null) return "book.json";
+        return properties.getProperty("bookFile");
     }
 }
