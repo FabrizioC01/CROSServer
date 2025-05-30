@@ -42,6 +42,7 @@ public class MarketManager {
                     }
                     if (max_id<order.getOrderId()) max_id=order.getOrderId();
                 }
+                if(max_id<0) max_id=idCounter.get();
                 System.out.println("[Market] history loaded last id: "+max_id);
                 historyfile=filename;
                 history.addAll(orders);
@@ -193,7 +194,14 @@ public class MarketManager {
 
     public static synchronized void getMonthHistory(String dat){
         ArrayList<Order> orders = new ArrayList<>();
-        String month = dat.substring(0,2);
+        Calendar calendar = Calendar.getInstance();
+        String month = dat.substring(0,1);
+        String year = dat.substring(2,5);
+        for(Order o: history){
+            Date d = new Date(o.timestamp());
+
+
+        }
     }
 
     public static synchronized void printBooks(){
@@ -226,6 +234,7 @@ public class MarketManager {
 
     public static synchronized void saveBook(String file){
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        if(askBook.isEmpty() && bidBook.isEmpty() && stopAsk.isEmpty() && stopBid.isEmpty()) return;
         try {
             File f = new File(file);
             if(f.createNewFile()){
@@ -254,6 +263,7 @@ public class MarketManager {
     public static synchronized void saveHistory(String file){
         File f = new File(file);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        if(history.isEmpty()) return;
         try{
             if(f.createNewFile()) System.out.println("[Market] Creating new history file...");
             else System.out.println("[Market] Overwriting history file...");

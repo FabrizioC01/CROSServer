@@ -26,6 +26,10 @@ public class Order {
         this.user=user;
     }
 
+    public long timestamp(){
+        return timestamp;
+    }
+
     public int getPrice(){
         return price;
     }

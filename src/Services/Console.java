@@ -6,20 +6,24 @@ import utils.PropertiesManager;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 
 public class Console implements Runnable {
-    private final Scanner scanner=new Scanner(System.in);
+    private static final Scanner scanner=new Scanner(System.in);
     private final ExecutorService exec;
     private final ServerSocket s;
     private final PropertiesManager manager;
+    private final ArrayList<Socket> userSockets;
 
-    public Console(ExecutorService e,ServerSocket s,PropertiesManager pm) {
+    public Console(ExecutorService e, ServerSocket s, PropertiesManager pm, ArrayList<Socket> sock) {
         this.exec=e;
         this.s=s;
         this.manager=pm;
+        this.userSockets=sock;
     }
     @Override
     public void run() {
@@ -37,14 +41,7 @@ public class Console implements Runnable {
                     MarketManager.printBooks();
                 }
                 case "exit"->{
-                    try {
-                        s.close();
-                    } catch (IOException ignored) {}
-                    MarketManager.saveBook(manager.getBookFile());
-                    MarketManager.saveHistory(manager.getHistoryFile());
-                    NotificationService.stop();
-                    exec.shutdownNow();
-                    System.out.println("[Console] Incoming connections blocked, the server will shut down when all clients are offline.");
+                    serverStop();
                     return;
                 }
                 default -> {
@@ -54,4 +51,22 @@ public class Console implements Runnable {
             }
         }
     }
+
+    public void serverStop(){
+        try {
+            s.close();
+        } catch (IOException ignored) {}
+
+        MarketManager.saveBook(manager.getBookFile());
+        MarketManager.saveHistory(manager.getHistoryFile());
+        NotificationService.stop();
+        exec.shutdownNow();
+        for(Socket sock:userSockets){
+            try{sock.close();}
+            catch(IOException ignored){}
+        }
+
+        System.out.println("[Console] Incoming connections blocked, the server will shut down when all clients are offline.");
+    }
+
 }
