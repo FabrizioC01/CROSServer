@@ -29,7 +29,6 @@ public class NotificationService implements Runnable{
                 System.out.println("[NotificationService] Notification service interrupted");
                 return;
             }catch (UnknownHostException ignored){
-
             } catch (SocketException conn){
                 System.out.println("[NotificationService] Notification service socket exception");
                 return;
@@ -55,10 +54,6 @@ public class NotificationService implements Runnable{
     }
     public static void unRegister(String user){
         usersIPs.remove(user);
-    }
-
-    public static void stop(){
-        running = false;
     }
 
 }

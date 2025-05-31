@@ -1,30 +1,43 @@
 package Services;
 
+import Models.MarketValues;
 import Models.Order;
+import utils.MarketManager;
 
-import java.util.Collections;
-import java.util.Queue;
+import java.util.LinkedList;
 import java.util.TreeMap;
-import java.util.concurrent.locks.ReentrantLock;
 
-public class StopConsumer implements Runnable {
-    private final TreeMap<Integer, Queue<Order>> stopBid;
-    private final TreeMap<Integer, Queue<Order>> stopAsk;
-    private final ReentrantLock lock;
+public class StopAskConsumer implements Runnable {
+    private final TreeMap<Integer, LinkedList<Order>> stopAsk;
 
-    public StopConsumer(TreeMap<Integer, Queue<Order>> stopBid, TreeMap<Integer, Queue<Order>> stopAsk,ReentrantLock lock) {
+    public StopAskConsumer( TreeMap<Integer, LinkedList<Order>> stopAsk) {
         this.stopAsk=stopAsk;
-        this.stopBid=stopBid;
-        this.lock=lock;
     }
 
     @Override
     public void run() {
+        while(true) {
+            synchronized (stopAsk) {
+                while(stopAsk.isEmpty()) {
+                    try{
+                        stopAsk.wait();
+                    }catch (InterruptedException e) {
+                        return;
+                    }
+                }
+                Integer val = MarketManager.getBestPrice(false);
+                if(val == null) return;
+                int firstValue = stopAsk.firstKey();
+                if( val>=firstValue){
+                    Order o = stopAsk.get(firstValue).poll();
+                    if(o==null) continue;
+                    MarketValues conv = MarketValues.getFromOrder(o);
+                    int orderId = MarketManager.insertMarketOrder(conv,o.getUser(),"stop");
 
+                }
+            }
+        }
     }
 
-    public static void submitStop(){
-
-    }
 
 }

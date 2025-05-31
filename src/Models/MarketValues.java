@@ -9,6 +9,18 @@ public class MarketValues {
     private Integer orderId;
     private String month;
 
+    public MarketValues(MarketType type, Integer size, Integer price, Integer orderId, String month) {
+        this.type = type;
+        this.size = size;
+        this.price = price;
+        this.orderId = orderId;
+        this.month = month;
+    }
+
+    public static MarketValues getFromOrder(Order o){
+        return new MarketValues(o.getType(),o.getFullSize(),o.getPrice(),null,null);
+    }
+
     public MarketType getType(){
         return type;
     }

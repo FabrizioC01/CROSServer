@@ -4,6 +4,8 @@ package utils;
 import Models.MarketValues;
 import Models.Order;
 import Services.NotificationService;
+import Services.StopAskConsumer;
+import Services.StopBidConsumer;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import enums.MarketType;
@@ -12,20 +14,34 @@ import java.io.*;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MarketManager {
-    private static final TreeMap<Integer, Queue<Order>> bidBook = new TreeMap<>(Collections.reverseOrder());
-    private static final TreeMap<Integer, Queue<Order>> askBook = new TreeMap<>();
+    private static String bFilename,hFilename;
 
-    private static final TreeMap<Integer, Queue<Order>> stopBid = new TreeMap<>(Collections.reverseOrder());
-    private static final TreeMap<Integer, Queue<Order>> stopAsk = new TreeMap<>();
+    private static final TreeMap<Integer, LinkedList<Order>> bidBook = new TreeMap<>(Collections.reverseOrder());
+    private static final TreeMap<Integer, LinkedList<Order>> askBook = new TreeMap<>();
+
+    private static final TreeMap<Integer, LinkedList<Order>> stopBid = new TreeMap<>(Collections.reverseOrder());
+    private static final TreeMap<Integer, LinkedList<Order>> stopAsk = new TreeMap<>();
+
+    private static Thread stopAskThread = null;
+    private static Thread stopBidThread = null;
 
     private static final AtomicInteger idCounter = new AtomicInteger(0);
 
     private static final ArrayList<Order> history = new ArrayList<>();
-    private static String historyfile = null;
 
-    public static void loadHistory(String filename) {
+    public static void init(String historyFile, String bookFile){
+        loadHistory(historyFile);
+        loadBook(bookFile);
+        hFilename=historyFile;
+        bFilename=bookFile;
+        stopAskThread= new Thread(new StopAskConsumer(stopAsk));
+        stopBidThread= new Thread(new StopBidConsumer(stopBid));
+    }
+
+    private static void loadHistory(String filename) {
         if (filename==null) return;
         Gson gson = new Gson();
         try(FileReader f = new FileReader(filename)){
@@ -44,7 +60,6 @@ public class MarketManager {
                 }
                 if(max_id<0) max_id=idCounter.get();
                 System.out.println("[Market] history loaded last id: "+max_id);
-                historyfile=filename;
                 history.addAll(orders);
                 idCounter.set(max_id);
             }
@@ -58,7 +73,7 @@ public class MarketManager {
         }
     }
 
-    public static void loadBook(String filename) {
+    private static void loadBook(String filename) {
         if (filename==null) return;
         Gson gson = new Gson();
         try(FileReader fr = new FileReader(filename)){
@@ -86,15 +101,16 @@ public class MarketManager {
         }
     }
 
-    public static synchronized int insertMarketOrder(MarketValues marketValues, String user) {
+
+    public static synchronized int insertMarketOrder(MarketValues marketValues, String user,String Type) {
         int n=0;
         int sum=0;
         int size = marketValues.getSize();
-        TreeMap<Integer, Queue<Order>> book = (marketValues.getType().equals(MarketType.ask))?bidBook:askBook;
+        TreeMap<Integer, LinkedList<Order>> book = (marketValues.getType().equals(MarketType.ask))?bidBook:askBook;
         if(quantityCheck(book,marketValues.getSize())){
-            Iterator<Map.Entry<Integer, Queue<Order>>> iterator = book.entrySet().iterator();
+            Iterator<Map.Entry<Integer, LinkedList<Order>>> iterator = book.entrySet().iterator();
             while(iterator.hasNext()){
-                Map.Entry<Integer, Queue<Order>> entry = iterator.next(); // key-value
+                Map.Entry<Integer, LinkedList<Order>> entry = iterator.next(); // key-value
                 Iterator<Order> orderIterator = entry.getValue().iterator();
                 while(orderIterator.hasNext()){
                     Order order = orderIterator.next();
@@ -114,7 +130,7 @@ public class MarketManager {
                             marketValues.setsize(0);
                         }
                         int id = idCounter.incrementAndGet();
-                        Order ord = new Order(id,marketValues.getType(),"market",size,sum/n,new Timestamp(System.currentTimeMillis()),user);
+                        Order ord = new Order(id,marketValues.getType(),Type,size,sum/n,new Timestamp(System.currentTimeMillis()),user);
                         history.add(ord);
                         return id;
                     }
@@ -124,8 +140,41 @@ public class MarketManager {
         }return -1;
     }
 
-    private static synchronized boolean quantityCheck(TreeMap<Integer, Queue<Order>> book,int qty) {
-        for(Queue<Order> q : book.values()) {
+    public static synchronized Integer getBestPrice(boolean fromAsk){
+        Integer val;
+        try{
+            if(fromAsk) val = askBook.firstKey();
+            else val = askBook.lastKey();
+        }catch (NoSuchElementException el ){
+            return null;
+        }
+        return val;
+    }
+
+    public static int insertStopOrder(MarketValues mv,String user) {
+        int id =idCounter.incrementAndGet();
+        Order o = new Order(id,mv.getType(),"stop",mv.getSize(),mv.getPrice(),new Timestamp(System.currentTimeMillis()),user);
+
+        if(mv.getType().equals(MarketType.ask)){
+            synchronized (stopAsk){
+                LinkedList<Order> list =stopAsk.get(mv.getPrice());
+                if(list ==null) list = new LinkedList<>();
+                list.add(o);
+                stopAsk.notify();
+            }
+        }else{
+            synchronized (stopBid){
+                LinkedList<Order> list =stopBid.get(mv.getPrice());
+                if(list ==null) list = new LinkedList<>();
+                list.add(o);
+                stopBid.notify();
+            }
+        }
+        return id;
+    }
+
+    private static synchronized boolean quantityCheck(TreeMap<Integer, LinkedList<Order>> book,int qty) {
+        for(LinkedList<Order> q : book.values()) {
             for(Order o : q) {
                 qty-=o.getRemaining();
                 if(qty<=0) return true;
@@ -138,37 +187,43 @@ public class MarketManager {
         Order order = new Order(idCounter.incrementAndGet(),request.getType(),"limit",request.getSize(),request.getPrice(),new Timestamp(System.currentTimeMillis()),user);
         if(request.getType().equals(MarketType.ask)){
 
-            Iterator<Map.Entry<Integer,Queue<Order>>> it = bidBook.entrySet().iterator();
+            Iterator<Map.Entry<Integer,LinkedList<Order>>> it = bidBook.entrySet().iterator();
             while(it.hasNext()){
-                Map.Entry<Integer,Queue<Order>> entry = it.next();
+                Map.Entry<Integer,LinkedList<Order>> entry = it.next();
                 if(request.getPrice()>entry.getKey()) break;
                 if (bookConsumer(order, it, entry)) return order.getOrderId();
             }
             if (order.getRemaining()!=0){
-                Queue<Order> list =askBook.get(order.getPrice());
+                LinkedList<Order> list =askBook.get(order.getPrice());
                 if(list==null) list = new LinkedList<>();
                 askBook.put(order.getPrice(),list);
                 list.add(order);
             }
+            synchronized (stopBid){
+                stopBid.notify();
+            }
         }else {
-            Iterator<Map.Entry<Integer,Queue<Order>>> it = askBook.entrySet().iterator();
+            Iterator<Map.Entry<Integer,LinkedList<Order>>> it = askBook.entrySet().iterator();
             while(it.hasNext()){
-                Map.Entry<Integer,Queue<Order>> entry = it.next();
+                Map.Entry<Integer,LinkedList<Order>> entry = it.next();
                 if(request.getPrice()<entry.getKey()) break;
                 if (bookConsumer(order, it, entry)) return order.getOrderId();
             }
             if(order.getRemaining()!=0){
-                Queue<Order> list =bidBook.get(order.getPrice());
+                LinkedList<Order> list =bidBook.get(order.getPrice());
                 if(list == null) list = new LinkedList<>();
                 bidBook.put(order.getPrice(),list);
                 list.add(order);
+            }
+            synchronized (stopBid){
+                stopBid.notify();
             }
         }
         return order.getOrderId();
     }
 
 
-    private static synchronized boolean bookConsumer(Order order, Iterator<Map.Entry<Integer, Queue<Order>>> it, Map.Entry<Integer, Queue<Order>> entry) {
+    private static synchronized boolean bookConsumer(Order order, Iterator<Map.Entry<Integer, LinkedList<Order>>> it, Map.Entry<Integer, LinkedList<Order>> entry) {
         Iterator<Order> queue = entry.getValue().iterator();
         while(queue.hasNext()){
             Order val = queue.next();
@@ -225,14 +280,15 @@ public class MarketManager {
             if(ask!=null && bid!=null) System.out.println("\nSpread: "+(float)Math.abs(ask.getPrice()-bid.getPrice())/1000);
         }
     }
-    public static synchronized void printHistory(){
-        System.out.println("HISTORY (price x size):");
-        for(Order o : history){
-            System.out.println("["+o.getOrderId()+"] "+(float)o.getPrice()/1000+"$ x "+(float)o.getRemaining()/1000+"BTC");
+
+    public static synchronized void saveAll(){
+        if(hFilename!=null && bFilename!=null){
+            saveHistory(hFilename);
+            saveBook(bFilename);
         }
     }
 
-    public static synchronized void saveBook(String file){
+    private static synchronized void saveBook(String file){
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         if(askBook.isEmpty() && bidBook.isEmpty() && stopAsk.isEmpty() && stopBid.isEmpty()) return;
         try {
@@ -260,7 +316,7 @@ public class MarketManager {
     }
 
 
-    public static synchronized void saveHistory(String file){
+    private static synchronized void saveHistory(String file){
         File f = new File(file);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         if(history.isEmpty()) return;

@@ -65,22 +65,20 @@ public class ConnectionService implements Runnable{
                 }
                 case null, default -> throw new InvalidJsonObject();
             }
-            System.out.println(msgPrefix+"client disconnected");
-            AuthManager.logout(user);
+
         }catch (SocketException ex){
             if (!canRun.get()) System.out.println(msgPrefix+" client kicked for shutdown");
-            else System.out.println(msgPrefix+"Socket error");
+            else System.out.println(msgPrefix+"Socket closed");
         } catch (ClientSocketClose cl){
             System.out.println(msgPrefix+"client disconnected");
-            AuthManager.logout(user);
         }catch(InvalidJsonObject inv){
             System.out.println(msgPrefix+"invalid message received");
-            AuthManager.logout(user);
         }catch (SocketTimeoutException exc){
             System.out.println(msgPrefix+"timeout");
-            AuthManager.logout(user);
         } catch(IOException e) {
             System.out.println("error opening communication stream");
+        }finally {
+            AuthManager.logout(user);
         }
     }
 
@@ -98,9 +96,13 @@ public class ConnectionService implements Runnable{
                         System.out.println(msgPrefix+"operation not accepted in this area");
                         AuthManager.logout(user);
                         return;
+                    }case insertStopOrder -> {
+                        int id = MarketManager.insertStopOrder(req.getMarketValues(),user.getUsername());
+                        Serializer ser = new Serializer(id);
+                        out.println(ser);
                     }
                     case insertMarketOrder -> {
-                        int id = MarketManager.insertMarketOrder(req.getMarketValues(),user.getUsername());
+                        int id = MarketManager.insertMarketOrder(req.getMarketValues(),user.getUsername(),"market");
                         Serializer ser = new Serializer(id);
                         out.println(ser);
                     }
@@ -117,6 +119,7 @@ public class ConnectionService implements Runnable{
                         ResponseCode rc = AuthManager.logout(user);
                         Serializer ser = new Serializer(rc);
                         out.println(ser);
+
                     }
                     case null, default -> {
                         AuthManager.logout(user);

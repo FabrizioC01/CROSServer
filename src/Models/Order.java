@@ -63,4 +63,8 @@ public class Order {
         return orderId;
     }
 
+    public static Order failedStopOrder(int id,long time){
+        return new Order(id,null,null,null,null,new Timestamp(time),null);
+    }
+
 }

@@ -29,7 +29,6 @@ public class AuthManager {
                 System.out.println("Creating and using "+fileName+" as users file...");
             }else{
                 System.out.println("Using "+fileName+" as users file...");
-
             }
         }catch (IOException e){
             System.out.println("Users file error...");
@@ -102,7 +101,6 @@ public class AuthManager {
     public static synchronized ResponseCode logout(User auth){
         boolean r = online.remove(auth);
         if (r) {
-            printOnlineUsers();
             NotificationService.unRegister(auth.getUsername());
             return ResponseCode.LOGOUT_OK;
         }

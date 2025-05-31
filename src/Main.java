@@ -10,6 +10,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -17,8 +18,7 @@ public class Main {
     public static void main(String[] args) {
         PropertiesManager pm = new PropertiesManager();
         AuthManager.init(pm.getUsersFile());
-        MarketManager.loadHistory(pm.getHistoryFile());
-        MarketManager.loadBook(pm.getBookFile());
+        MarketManager.init(pm.getUsersFile(),pm.getBookFile());
         ArrayList<Socket> sockets = new ArrayList<>();
         Runtime rt = Runtime.getRuntime();
         try(ServerSocket socket = new ServerSocket(pm.getPort());
@@ -34,6 +34,11 @@ public class Main {
                 Socket s = socket.accept();
                 sockets.add(s);
                 exec.execute(new ConnectionService(s));
+                Iterator<Socket> iterator = sockets.iterator();
+                while (iterator.hasNext()) {
+                    Socket sock = iterator.next();
+                    if(sock.isClosed()) iterator.remove();
+                }
             }
         }catch (SocketException soc){
             System.out.println("[Server] Socket Closed");

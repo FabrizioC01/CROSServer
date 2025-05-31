@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Properties;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 
@@ -41,7 +40,7 @@ public class Console implements Runnable {
                     MarketManager.printBooks();
                 }
                 case "exit"->{
-                    serverStop();
+                    System.exit(0);
                     return;
                 }
                 default -> {
@@ -56,16 +55,13 @@ public class Console implements Runnable {
         try {
             s.close();
         } catch (IOException ignored) {}
-
-        MarketManager.saveBook(manager.getBookFile());
-        MarketManager.saveHistory(manager.getHistoryFile());
-        NotificationService.stop();
+        ConnectionService.disconnectAll();
+        MarketManager.saveAll();
         exec.shutdownNow();
         for(Socket sock:userSockets){
             try{sock.close();}
             catch(IOException ignored){}
         }
-
         System.out.println("[Console] Incoming connections blocked, the server will shut down when all clients are offline.");
     }
 
