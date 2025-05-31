@@ -67,7 +67,7 @@ public class ConnectionService implements Runnable{
             }
 
         }catch (SocketException ex){
-            if (!canRun.get()) System.out.println(msgPrefix+" client kicked for shutdown");
+            if (canRun.get()) System.out.println(msgPrefix+" client kicked for shutdown");
             else System.out.println(msgPrefix+"Socket closed");
         } catch (ClientSocketClose cl){
             System.out.println(msgPrefix+"client disconnected");

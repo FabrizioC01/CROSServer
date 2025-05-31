@@ -31,7 +31,7 @@ public class Console implements Runnable {
             String command=scanner.nextLine();
             switch(command.toLowerCase().trim()){
                 case "help"->{
-                    System.out.println("[Console] Command list:\n help - list of commands\n online - list of online users\n book - display order book\n exit - stop server");
+                    System.out.println("[Console] Command list:\n help - list of commands\n online - list of online users\n book - display order book\n stops - display stop orders\n exit - stop server");
                 }
                 case "online"->{
                     AuthManager.printOnlineUsers();
@@ -39,13 +39,16 @@ public class Console implements Runnable {
                 case "book"->{
                     MarketManager.printBooks();
                 }
+                case "stops"->{
+                    MarketManager.printStop();
+                }
                 case "exit"->{
                     System.exit(0);
                     return;
                 }
                 default -> {
                     System.out.println("[Console] Unknown command: " + command);
-                    System.out.println("[Console] Command list:\n help - list of commands\n online - list of online users\n book - display order book\n exit - stop server");
+                    System.out.println("[Console] Command list:\n help - list of commands\n online - list of online users\n book - display order book\n stops - display stop orders\n exit - stop server");
                 }
             }
         }

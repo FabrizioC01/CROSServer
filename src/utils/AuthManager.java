@@ -75,6 +75,7 @@ public class AuthManager {
 
             ArrayList<User> users;
             users = obj.getUsers();
+            if(users==null) throw new RuntimeException("Users file error");
 
             for (User us : users) {
                 if (us.match(auth)) {

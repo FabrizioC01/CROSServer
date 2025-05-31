@@ -18,9 +18,10 @@ public class Main {
     public static void main(String[] args) {
         PropertiesManager pm = new PropertiesManager();
         AuthManager.init(pm.getUsersFile());
-        MarketManager.init(pm.getUsersFile(),pm.getBookFile());
+        MarketManager.init(pm.getHistoryFile(),pm.getBookFile());
         ArrayList<Socket> sockets = new ArrayList<>();
         Runtime rt = Runtime.getRuntime();
+
         try(ServerSocket socket = new ServerSocket(pm.getPort());
             ExecutorService exec = Executors.newCachedThreadPool()) {
             System.out.println("[Server] Listening on port " + socket.getLocalPort());
