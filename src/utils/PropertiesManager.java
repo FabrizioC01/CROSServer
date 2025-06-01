@@ -10,11 +10,17 @@ public class PropertiesManager {
     private final static String path = "server.properties";
     private final Properties properties;
 
+    /**
+     * Istanzia la classe {@Code Properties} e carica le proprietà dal file
+     */
     public PropertiesManager() {
         properties = new Properties();
         loadProperties();
     }
 
+    /**
+     * Carica dal file o crea il file properties con dei valori di default.
+     */
     private void loadProperties() {
         File file = new File(path);
         if (file.exists()) {
@@ -30,6 +36,9 @@ public class PropertiesManager {
         }
     }
 
+    /**
+     * Valori di default
+     */
     private void setDefaultProperties() {
         properties.setProperty("port", "1234");
         properties.setProperty("timeout", "0");
@@ -47,6 +56,10 @@ public class PropertiesManager {
         }
     }
 
+
+    /**
+     * Metodi getter per leggere le proprietà
+     */
 
     public int getPort(){
         String port = properties.getProperty("port");

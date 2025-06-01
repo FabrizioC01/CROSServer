@@ -11,19 +11,26 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 
+/**
+ * Classe Console che attende un comando per effettuare varie operazioni
+ * dal server.
+ */
 public class Console implements Runnable {
     private static final Scanner scanner=new Scanner(System.in);
-    private final ExecutorService exec;
-    private final ServerSocket s;
-    private final ArrayList<Socket> userSockets;
     private final MarketManager marketManager;
 
-    public Console(ExecutorService e, ServerSocket s, PropertiesManager pm, ArrayList<Socket> sock,MarketManager manager) {
-        this.exec=e;
-        this.s=s;
-        this.userSockets=sock;
+    /**
+     * Inizializza la classe passando il gestore del book per poter vedere:
+     * il book, gli stop, gli utenti online e fermare il server.
+     * @param manager gestore del book utilizzato concorrentemente con i thread per eseguire il salvataggio delle varie strutture
+     */
+    public Console(MarketManager manager) {
         this.marketManager=manager;
     }
+
+    /**
+     * Thread che attende i comandi.
+     */
     @Override
     public void run() {
         System.out.println("[Console] Console enabled, type 'help' for command list");
@@ -54,18 +61,6 @@ public class Console implements Runnable {
         }
     }
 
-    public void serverStop(){
-        try {
-            s.close();
-        } catch (IOException ignored) {}
-        ConnectionService.disconnectAll();
-        marketManager.saveAll();
-        exec.shutdownNow();
-        for(Socket sock:userSockets){
-            try{sock.close();}
-            catch(IOException ignored){}
-        }
-        System.out.println("[Console] Closing server");
-    }
+
 
 }
