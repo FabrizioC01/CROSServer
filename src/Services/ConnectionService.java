@@ -2,6 +2,7 @@ package Services;
 
 import Errors.ClientSocketClose;
 import Errors.InvalidJsonObject;
+import Models.ClosedOrder;
 import Models.Credentials;
 import Models.MarketValues;
 import Models.User;
@@ -18,6 +19,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConnectionService implements Runnable{
@@ -27,10 +29,12 @@ public class ConnectionService implements Runnable{
     private String msgPrefix;
     private User user=null;
     private static final AtomicBoolean canRun = new AtomicBoolean(true);
+    private MarketManager manager;
 
-    public ConnectionService(Socket socket) {
+    public ConnectionService(Socket socket,MarketManager manager) {
         this.socket = socket;
         this.msgPrefix = "["+socket.getInetAddress().getHostAddress()+":"+socket.getPort()+"] ";
+        this.manager = manager;
     }
     @Override
     public void run() {
@@ -97,23 +101,33 @@ public class ConnectionService implements Runnable{
                         AuthManager.logout(user);
                         return;
                     }case insertStopOrder -> {
-                        int id = MarketManager.insertStopOrder(req.getMarketValues(),user.getUsername());
+                        int id = manager.insertStopOrder(req.getMarketValues(),user.getUsername());
                         Serializer ser = new Serializer(id);
                         out.println(ser);
                     }
                     case insertMarketOrder -> {
-                        int id = MarketManager.insertMarketOrder(req.getMarketValues(),user.getUsername(),"market");
+                        int id = manager.insertMarketOrder(req.getMarketValues(),user.getUsername(),"market");
                         Serializer ser = new Serializer(id);
                         out.println(ser);
                     }
                     case insertLimitOrder -> {
-                        int id = MarketManager.insertLimitOrder(req.getMarketValues(), user.getUsername());
+                        int id = manager.insertLimitOrder(req.getMarketValues(), user.getUsername());
                         Serializer ser = new Serializer(id);
                         out.println(ser);
                     }
                     case getPriceHistory -> {
                         MarketValues mv =req.getMarketValues();
-
+                        ArrayList<ClosedOrder> resp = manager.getMonthHistory(mv.getMonth());
+                        Serializer ser  = new Serializer(resp);
+                        out.println(ser);
+                    }
+                    case cancelOrder -> {
+                        MarketValues mv =req.getMarketValues();
+                        boolean res = manager.cancelOrder(mv.getOrderId(),user.getUsername());
+                        Serializer ser;
+                        if(res) ser = new Serializer(ResponseCode.DEL_OK);
+                        else ser = new Serializer(ResponseCode.DEL_ERR);
+                        out.println(ser);
                     }
                     case logout -> {
                         ResponseCode rc = AuthManager.logout(user);

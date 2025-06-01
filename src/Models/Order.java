@@ -10,7 +10,7 @@ public class Order extends ClosedOrder{
     private String user;
 
     public Order(int orderId, MarketType type, String orderType, Integer size, Integer price, Timestamp timestamp,String user){
-        super(orderId, type, orderType, size, price, timestamp, user);
+        super(orderId, type, orderType, size, price, timestamp);
         this.remaining=size;
         this.user=user;
     }

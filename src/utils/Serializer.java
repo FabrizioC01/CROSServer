@@ -1,16 +1,19 @@
 package utils;
 
+import Models.ClosedOrder;
 import Models.Notification;
 import Models.Order;
 import com.google.gson.Gson;
 import enums.ResponseCode;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 
 public class Serializer implements Serializable {
     private final Integer response;
     private final String errorMessage;
     private final Integer orderId;
+    private final ArrayList<ClosedOrder> trades;
 
     /**
      * Used for operation responses
@@ -20,6 +23,7 @@ public class Serializer implements Serializable {
         this.response = responseCode.getCode();
         this.errorMessage = responseCode.getMessage();
         this.orderId = null;
+        this.trades = null;
     }
 
     /**
@@ -30,6 +34,14 @@ public class Serializer implements Serializable {
         this.response = null;
         this.errorMessage = null;
         this.orderId = orderId;
+        this.trades = null;
+    }
+
+    public Serializer(ArrayList<ClosedOrder> history) {
+        this.response = null;
+        this.errorMessage = null;
+        this.orderId = null;
+        this.trades = history;
     }
 
     public static String serializeClosedTrade(Order o){

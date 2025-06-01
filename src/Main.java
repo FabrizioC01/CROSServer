@@ -10,7 +10,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -18,7 +17,7 @@ public class Main {
     public static void main(String[] args) {
         PropertiesManager pm = new PropertiesManager();
         AuthManager.init(pm.getUsersFile());
-        MarketManager.init(pm.getHistoryFile(),pm.getBookFile());
+        MarketManager manager = new MarketManager(pm.getHistoryFile(),pm.getBookFile());
         ArrayList<Socket> sockets = new ArrayList<>();
         Runtime rt = Runtime.getRuntime();
 
@@ -26,7 +25,7 @@ public class Main {
             ExecutorService exec = Executors.newCachedThreadPool()) {
             System.out.println("[Server] Listening on port " + socket.getLocalPort());
             socket.setSoTimeout(pm.getTimeout());
-            Console c = new Console(exec,socket,pm,sockets);
+            Console c = new Console(exec,socket,pm,sockets,manager);
             Thread t = new Thread(c);
             t.start();
             rt.addShutdownHook(new stopThread(c));
@@ -34,12 +33,8 @@ public class Main {
             while (true) {
                 Socket s = socket.accept();
                 sockets.add(s);
-                exec.execute(new ConnectionService(s));
-                Iterator<Socket> iterator = sockets.iterator();
-                while (iterator.hasNext()) {
-                    Socket sock = iterator.next();
-                    if(sock.isClosed()) iterator.remove();
-                }
+                exec.execute(new ConnectionService(s,manager));
+                sockets.removeIf(Socket::isClosed);
             }
         }catch (SocketException soc){
             System.out.println("[Server] Socket Closed");

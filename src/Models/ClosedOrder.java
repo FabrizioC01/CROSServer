@@ -11,7 +11,7 @@ public class ClosedOrder{
     private Integer size;
     private Integer price;
     private long timestamp;
-    public ClosedOrder(int orderId, MarketType type, String orderType, Integer size, Integer price, Timestamp timestamp, String user){
+    public ClosedOrder(int orderId, MarketType type, String orderType, Integer size, Integer price, Timestamp timestamp){
         this.orderId = orderId;
         this.type = type;
         this.orderType = orderType;
@@ -32,6 +32,9 @@ public class ClosedOrder{
     }
     public int getFullSize(){
         return size;
+    }
+    public String getOrderType(){
+        return orderType;
     }
 
     public MarketType getType(){

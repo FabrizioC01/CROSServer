@@ -37,7 +37,10 @@ public class MarketValues {
     public int getSize(){
         return size;
     }
-    public String getMonth(String month){
+    public String getMonth(){
         return month;
+    }
+    public int getOrderId(){
+        return orderId;
     }
 }

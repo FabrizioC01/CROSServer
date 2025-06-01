@@ -15,14 +15,14 @@ public class Console implements Runnable {
     private static final Scanner scanner=new Scanner(System.in);
     private final ExecutorService exec;
     private final ServerSocket s;
-    private final PropertiesManager manager;
     private final ArrayList<Socket> userSockets;
+    private final MarketManager marketManager;
 
-    public Console(ExecutorService e, ServerSocket s, PropertiesManager pm, ArrayList<Socket> sock) {
+    public Console(ExecutorService e, ServerSocket s, PropertiesManager pm, ArrayList<Socket> sock,MarketManager manager) {
         this.exec=e;
         this.s=s;
-        this.manager=pm;
         this.userSockets=sock;
+        this.marketManager=manager;
     }
     @Override
     public void run() {
@@ -37,10 +37,10 @@ public class Console implements Runnable {
                     AuthManager.printOnlineUsers();
                 }
                 case "book"->{
-                    MarketManager.printBooks();
+                    marketManager.printBooks();
                 }
                 case "stops"->{
-                    MarketManager.printStop();
+                    marketManager.printStop();
                 }
                 case "exit"->{
                     System.exit(0);
@@ -59,13 +59,13 @@ public class Console implements Runnable {
             s.close();
         } catch (IOException ignored) {}
         ConnectionService.disconnectAll();
-        MarketManager.saveAll();
+        marketManager.saveAll();
         exec.shutdownNow();
         for(Socket sock:userSockets){
             try{sock.close();}
             catch(IOException ignored){}
         }
-        System.out.println("[Console] Incoming connections blocked, the server will shut down when all clients are offline.");
+        System.out.println("[Console] Closing server");
     }
 
 }
