@@ -475,8 +475,8 @@ public class MarketManager {
     }
 
     /**
-     *
-     * @param file
+     * Salva i book e le strutture per gli stop, e l'id
+     * dell'ultimo ordine creato
      */
     private synchronized void saveBook(){
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -505,7 +505,10 @@ public class MarketManager {
         }
     }
 
-
+    /**
+     * Salva lo storico precedentemente letto
+     * con quello disponibile alla chiusura del server
+     */
     private synchronized void saveHistory(){
         File f = new File(hFilename);
         Gson gson = new Gson();
@@ -528,6 +531,9 @@ public class MarketManager {
         }
     }
 
+    /**
+     * Stampa gli stop in attesa di attivazione
+     */
     public void printStop(){
         System.out.println("Sell Stops:");
         synchronized (stopAsk){

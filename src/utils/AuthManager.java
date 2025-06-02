@@ -21,6 +21,10 @@ public class AuthManager {
 
     private static final ArrayList<User> online=new ArrayList<>();
 
+    /**
+     *  Crea(o utilizza quello esistente) un file utenti
+     * @param fName Nome del file utenti
+     */
     public static void init(String fName){
         fileName=fName;
         File f = new File(fName);
@@ -36,6 +40,12 @@ public class AuthManager {
         }
     }
 
+    /**
+     * Registra l'utente se l'utente non esiste già, e restituisce
+     * i codici di errore a seconda dell'esito.
+     * @param auth Campo values ricevuto dal client
+     * @return Codice di risposta da mandare al client
+     */
     public static synchronized ResponseCode register(User auth){
         Gson gson=new GsonBuilder().setPrettyPrinting().create();
         if(auth.getPassword().isEmpty() || auth.getPassword().isBlank()) return ResponseCode.REG_INV_PWD;
@@ -64,6 +74,12 @@ public class AuthManager {
         }
     }
 
+    /**
+     * Effettua il login se l'utente non è online, e se
+     * è presente nel file utenti.
+     * @param auth Campo values dal client
+     * @return Codice esito
+     */
     public static synchronized ResponseCode login(User auth){
         if(online.contains(auth)) return ResponseCode.LOG_ONLINE;
 
@@ -92,6 +108,9 @@ public class AuthManager {
         }
     }
 
+    /**
+     * Stampa gli utenti online
+     */
     public static synchronized void printOnlineUsers(){
         System.out.println("[Online] "+online.size());
         online.forEach((User u)->{
@@ -99,6 +118,12 @@ public class AuthManager {
         });
     }
 
+    /**
+     * Rimuove l'utente dagli utenti online e lo rimuove il suo indirizzo
+     * dalla lista per l'invio di notifiche
+     * @param auth utente che richiede il logout
+     * @return Esisto logout
+     */
     public static synchronized ResponseCode logout(User auth){
         boolean r = online.remove(auth);
         if (r) {
@@ -108,6 +133,12 @@ public class AuthManager {
         return ResponseCode.LOGOUT_OFFLINE;
     }
 
+    /**
+     * Effettua l'update della password se l'utente non è online
+     * testando la validità della vecchia e nuova password.
+     * @param auth Richìesta del client
+     * @return Esito operazione
+     */
     public static synchronized ResponseCode changePassword(Credentials auth){
         Gson gson=new GsonBuilder().setPrettyPrinting().create();
         if(auth.getNewPassword().equals(auth.getOldPassword())) return ResponseCode.UPD_EQ;

@@ -17,6 +17,12 @@ public class Deserializer {
     private User user=null; //used for login and registration
     private MarketValues marketValues=null; //used only for market operations
 
+    /**
+     *  Popola i campi a seconda della richiesta ricevuta e mette null gli altri.
+     * @param serialized_object Oggetto che si vuole de-serializzare
+     * @throws InvalidJsonObject Sollevata in caso il messaggio non rispetti il formato richiesto
+     * @throws ClientSocketClose Sollevata in caso la readLine riceva null (connessione chiusa dal client)
+     */
     public Deserializer(String serialized_object) throws InvalidJsonObject,ClientSocketClose {
         Gson gson = new Gson();
         if(serialized_object==null) throw new ClientSocketClose();
