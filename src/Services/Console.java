@@ -1,4 +1,4 @@
-package main.Services;
+package Services;
 
 import utils.AuthManager;
 import utils.MarketManager;

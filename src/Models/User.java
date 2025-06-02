@@ -1,4 +1,4 @@
-package main.Models;
+package Models;
 
 /**
  * Campo values che viene mandato dal client al momento del login,

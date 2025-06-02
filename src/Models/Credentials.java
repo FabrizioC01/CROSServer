@@ -1,4 +1,4 @@
-package main.Models;
+package Models;
 
 /**
  * Classe (de)serializzazione campo values per cambio password.
