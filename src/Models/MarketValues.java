@@ -2,6 +2,9 @@ package Models;
 
 import enums.MarketType;
 
+/**
+ * Classe (de)serializzazione campo values per operazioni nel book.
+ */
 public class MarketValues {
     private MarketType type;
     private Integer size;

@@ -4,7 +4,11 @@ import enums.MarketType;
 
 import java.sql.Timestamp;
 
-
+/**
+ * Classe degli ordini non terminati, ne fanno parte tutti gli ordini del book
+ * nella quale è possibile consumarne una frazione e tenere traccia dell'utente che lo ha eseguito.
+ * Ne fanno parte gli ordini nei book e nelle strutture degli stop.
+ */
 public class Order extends ClosedOrder{
     private Integer remaining;
     private String user;

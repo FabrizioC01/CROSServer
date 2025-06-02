@@ -4,6 +4,10 @@ import enums.MarketType;
 
 import java.sql.Timestamp;
 
+/**
+ * Classe per gestione ordini conclusi(nello storico) differisce dagli ordini
+ * per le proprietà: utente e rimanenza.
+ */
 public class ClosedOrder{
     protected int orderId;
     private MarketType type;

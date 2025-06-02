@@ -89,13 +89,12 @@ class stopThread extends Thread {
         try {
             s.close();
         } catch (IOException ignored) {}
-        ConnectionService.disconnectAll();
         marketManager.saveAll();
         exec.shutdownNow();
         for(Socket sock:userSockets){
             try{sock.close();}
             catch(IOException ignored){}
         }
-        System.out.println("[Console] Closing server");
+        System.out.println("[Console] Server closed...");
     }
 }

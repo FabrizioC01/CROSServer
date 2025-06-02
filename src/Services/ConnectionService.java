@@ -28,14 +28,19 @@ public class ConnectionService implements Runnable{
     private BufferedReader in=null;
     private String msgPrefix;
     private User user=null;
-    private static final AtomicBoolean canRun = new AtomicBoolean(true);
-    private MarketManager manager;
+    private final MarketManager manager;
 
     public ConnectionService(Socket socket,MarketManager manager) {
         this.socket = socket;
         this.msgPrefix = "["+socket.getInetAddress().getHostAddress()+":"+socket.getPort()+"] ";
         this.manager = manager;
     }
+
+    /**
+     * Thread che attende le connessioni in fase iniziale quindi
+     * login, password update e registrazione, in caso di login con esito
+     * positivo verrà chiamata {@code reservedArea}
+     */
     @Override
     public void run() {
         try(BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -71,8 +76,7 @@ public class ConnectionService implements Runnable{
             }
 
         }catch (SocketException ex){
-            if (canRun.get()) System.out.println(msgPrefix+" client kicked for shutdown");
-            else System.out.println(msgPrefix+"Socket closed");
+            System.out.println(msgPrefix+" Socket error");
         } catch (ClientSocketClose cl){
             System.out.println(msgPrefix+"client disconnected");
         }catch(InvalidJsonObject inv){
@@ -86,13 +90,18 @@ public class ConnectionService implements Runnable{
         }
     }
 
-
+    /**
+     * Funzione che gestisce gli utenti appena loggati,
+     * attende che richiedano operazioni, se l'operazione richiesta non
+     * è contemplata l'utente viene disconnesso e viene sloggato.
+     * @param user struttura dell' utente appena loggato
+     */
     private void reservedArea(User user){
         this.msgPrefix = this.msgPrefix+ user.getUsername()+": ";
         this.user = user;
         System.out.println(msgPrefix+"logged in");
         try{
-            while(canRun.get()){
+            while(true){
                 Deserializer req = new Deserializer(in.readLine());
                 System.out.println(msgPrefix+"ask for : "+req.getOperation());
                 switch(req.getOperation()){
@@ -148,10 +157,8 @@ public class ConnectionService implements Runnable{
         }catch(InvalidJsonObject inv){
             System.out.println(msgPrefix+"invalid message received");
         }finally {
+            //effettua sempre il logout
             AuthManager.logout(user);
         }
-    }
-    public static void disconnectAll(){
-        canRun.set(false);
     }
 }

@@ -1,5 +1,9 @@
 package Models;
 
+/**
+ * Campo values che viene mandato dal client al momento del login,
+ * nella quale viene inclusa la porta udp per l'eventuale servizio di notifica
+ */
 public class User {
     private String username;
     private String password;

@@ -22,7 +22,8 @@ public class AuthManager {
     private static final ArrayList<User> online=new ArrayList<>();
 
     /**
-     *  Crea(o utilizza quello esistente) un file utenti
+     *  Crea(o utilizza quello esistente) un file utenti.
+     *  Questo metodo deve sempre essere chiamato prima di utilizzare altri metodi
      * @param fName Nome del file utenti
      */
     public static void init(String fName){

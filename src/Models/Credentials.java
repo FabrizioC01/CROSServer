@@ -1,5 +1,8 @@
 package Models;
 
+/**
+ * Classe (de)serializzazione campo values per cambio password.
+ */
 public class Credentials {
     private String username;
     private String oldPassword;
