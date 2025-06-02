@@ -1,4 +1,4 @@
-package utils;
+package main.utils;
 
 import Errors.ClientSocketClose;
 import Errors.InvalidJsonObject;

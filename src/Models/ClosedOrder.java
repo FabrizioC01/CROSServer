@@ -1,4 +1,4 @@
-package Models;
+package main.Models;
 
 import enums.MarketType;
 

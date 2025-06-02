@@ -1,4 +1,4 @@
-package Errors;
+package main.Errors;
 
 /**
  * Sollevato in caso di chiusura della socket da

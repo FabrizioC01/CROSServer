@@ -1,4 +1,4 @@
-package Errors;
+package main.Errors;
 
 /**
  * Eccezione sollevata in caso di oggetti non
