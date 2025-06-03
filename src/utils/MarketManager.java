@@ -357,6 +357,10 @@ public class MarketManager {
                 val.setPrice(order.getPrice());
                 history.add(val);
                 NotificationService.notify(val);
+                if(order.getRemaining()==0){
+                    NotificationService.notify(order);
+                    return true;
+                }
                 queue.remove();
             }else{
                 val.consume(order.getRemaining());
