@@ -2,7 +2,7 @@
 architecture-beta
     group api(server)[Server]
 
-    service db(database)[Database] in api
+    service db(solar:cpu-bold)[Database] in api
     service disk1(disk)[Storage] in api
     service disk2(disk)[Storage] in api
     service server(server)[Server] in api
